@@ -1,0 +1,48 @@
+[
+	{
+		"directory": "/home/richtofen/Code/famine",
+		"file": "/home/richtofen/Code/famine/src/famine.c",
+		"output": "/home/richtofen/Code/famine/src/famine.o",
+		"arguments": [
+			"/usr/bin/clang",
+			"-std=c99",
+			"-m64",
+			"-DERROR",
+			"-I/home/richtofen/Code/famine/inc",
+			"-Wall",
+			"-Wextra",
+			"-Werror",
+			"-Wpedantic",
+			"-Wno-unused",
+			"-Wno-unused-variable",
+			"-Wno-unused-parameter",
+			"-c",
+			"/home/richtofen/Code/famine/src/famine.c",
+			"-o",
+			"/home/richtofen/Code/famine/src/famine.o"
+		]
+	},
+	{
+		"directory": "/home/richtofen/Code/famine",
+		"file": "/home/richtofen/Code/famine/src/utils.c",
+		"output": "/home/richtofen/Code/famine/src/utils.o",
+		"arguments": [
+			"/usr/bin/clang",
+			"-std=c99",
+			"-m64",
+			"-DERROR",
+			"-I/home/richtofen/Code/famine/inc",
+			"-Wall",
+			"-Wextra",
+			"-Werror",
+			"-Wpedantic",
+			"-Wno-unused",
+			"-Wno-unused-variable",
+			"-Wno-unused-parameter",
+			"-c",
+			"/home/richtofen/Code/famine/src/utils.c",
+			"-o",
+			"/home/richtofen/Code/famine/src/utils.o"
+		]
+	}
+]
