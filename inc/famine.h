@@ -7,30 +7,31 @@
 
 # include <stdio.h>
 # include <errno.h>
-
-#ifdef DEBUG
-#define PRINT(...) printf(__VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
+# include <sys/mman.h>
+# include <sys/syscall.h>
+# include <sys/stat.h>
+# include <fcntl.h>
+# include <elf.h>
 
 #ifdef ERROR
-#define ERR_SYS(...) perror(__VA_ARGS__)
-#define ERR(...) fprintf(stderr, __VA_ARGS__);
+#define ERR_SYS(...) perror(__VA_ARGS__); 
+#define ERR(...) fprintf(stderr, __VA_ARGS__); printf("\n");
+#define PRINT(...) fprintf(stdout, __VA_ARGS__); printf("\n");
 #else
 #define ERR_SYS(...)
 #define ERR(...)
+#define PRINT(...)
 #endif
 
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
 
-#define PROT_READ 1
-#define PROT_WRITE 2
-#define PROT_EXEC 4
-#define MAP_PRIVATE 2
-#define MAP_ANONYMOUS 32
-#define MAP_FAILED ((void *)-1)
+//#define PROT_READ 1
+//#define PROT_WRITE 2
+//#define PROT_EXEC 4
+//#define MAP_PRIVATE 2
+//#define MAP_ANONYMOUS 32
+//#define MAP_FAILED ((void *)-1)
 
 
 #define SYS_READ 0
@@ -46,17 +47,14 @@
 #define SYS_EXIT 60
 #define SYS_GETDENTS64 217
 
-#define test_f "/tmp/test/"
-#define test2_f "/tmp/test2/"
 
 #define SEEK_END 2
 
-#define O_RDONLY 0
+//#define O_RDONLY 0
 
 #define DT_REG 8
 #define DT_DIR 4
 
-#define EI_NIDENT 16
 
 
 //typedef unsigned long size_t;

