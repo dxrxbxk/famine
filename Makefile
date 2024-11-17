@@ -82,7 +82,7 @@ override cflags := $(std) $(opt) $(dbg) $(defines) -I$(inc_dir) \
 					-Wall -Wextra -Werror -Wpedantic \
 					-Wno-unused -Wno-unused-variable -Wno-unused-parameter
 
-override ldflags := 
+override ldflags := -fpic -fpie
 # -nostartfiles -nostdlib 
 
 # dependency flags
