@@ -196,7 +196,7 @@ void	famine(void)
 	return ;
 }
 
-void	_start(void)
+void	_start()
 {
 	famine();
 	_syscall(SYS_EXIT, 0);
