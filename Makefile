@@ -1,4 +1,4 @@
-NAME = test
+NAME = famine
 
 src = $(wildcard src/*.c)
 asm = $(wildcard src/*.s)
@@ -13,7 +13,7 @@ cflags = -g
 
 sflags = -f elf64 -g
 
-ldflags = -z noexecstack
+ldflags = -z noexecstack -nostdlib -m elf_x86_64
 
 .PHONY: all clean fclean re
 
@@ -24,7 +24,7 @@ $(NAME): $(first_obj) $(obj)
 	./ptester.sh $(NAME)
 
 %.o: %.c
-	gcc $(cflags) -c -o $@ $<
+	gcc $(cflags) -c -o $@ $< -I./inc
 
 %.o: %.s
 	nasm $(sflags) -o $@ $<

