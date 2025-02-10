@@ -9,7 +9,7 @@ first_obj = src/main.o
 
 obj := $(filter-out $(first_obj), $(obj))
 
-cflags = -g
+cflags = -g -fpic
 
 sflags = -f elf64 -g
 
