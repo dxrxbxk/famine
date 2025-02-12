@@ -1,18 +1,17 @@
 BITS 64
 
+default rel
+
 extern famine
 extern end
 
-default rel
 
 section .text
 global _start
 
-_start:
-	push rdx
-	call famine
 
-	pop rdx
+_start:
+	call famine
 
 	jmp end
 

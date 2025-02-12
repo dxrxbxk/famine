@@ -1,38 +1,40 @@
 NAME = famine
 
-src = $(wildcard src/*.c)
-asm = $(wildcard src/*.s)
-obj = $(src:.c=.o)
-obj += $(asm:.s=.o)
+src = src/famine.c \
+      src/data.c \
+      src/map.c \
+      src/silvio.c \
+      src/utils.c 
 
-first_obj = src/main.o
+asm = src/syscall.s \
+      src/end.s
 
-obj := $(filter-out $(first_obj), $(obj))
+# Génération des fichiers objets correspondants
+obj = $(src:.c=.o) $(asm:.s=.o)
 
-cflags = -g -fpic
+cflags = -g -fno-stack-protector -fpic 
 
 sflags = -f elf64 -g
 
-ldflags = -z noexecstack -nostdlib -m elf_x86_64
+ldflags = -z noexecstack -nostdlib 
 
 .PHONY: all clean fclean re
 
 all: $(NAME)
 
-$(NAME): $(first_obj) $(obj)
-	ld -o $@ $^ $(ldflags)
-	./ptester.sh $(NAME)
+$(NAME): $(obj)
+	gcc -o $(NAME) $(obj) $(ldflags)
 
-%.o: %.c
+src/%.o: src/%.c
 	gcc $(cflags) -c -o $@ $< -I./inc
 
-%.o: %.s
+src/%.o: src/%.s
 	nasm $(sflags) -o $@ $<
 
 clean:
 	rm -f $(obj)
 
 fclean: clean
+	rm -f $(NAME)
 
 re: fclean all
-

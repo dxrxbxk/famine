@@ -9,9 +9,6 @@ typedef struct s_elf {
 	Elf64_Shdr	*shdr;
 	Elf64_Phdr	*phdr;
 
-	//Elf64_Dyn	*dyn;
-	//Elf64_Rel	*rel;
-	//Elf64_Rela	*rela;
 } t_elf;
 
 typedef struct s_cave {
