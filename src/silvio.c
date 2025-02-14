@@ -11,10 +11,10 @@
 
 int	silvio(t_data *data, size_t payload_size) {
 
-	size_t elf_size = data->size;
-	data->file = expand_file(data->file, data->size, data->size + PAGE_SIZE, data);
-	if (!data->file)
-		return -1;
+	//size_t elf_size = data->size;
+	//data->file = expand_file(data->file, data->size, data->size + PAGE_SIZE, data);
+	//if (!data->file)
+	//	return -1;
 
 	Elf64_Phdr	*phdr = data->elf.phdr;
 	Elf64_Shdr	*shdr = data->elf.shdr;
@@ -22,10 +22,10 @@ int	silvio(t_data *data, size_t payload_size) {
 
 	data->cave.old_entry = ehdr->e_entry;
 
-	ehdr->e_shoff += PAGE_SIZE;
 
-	for (int i = 0; i < ehdr->e_phnum; i++) { 
+	for (int i = ehdr->e_phnum - 1; i >= 0; i--) {
 		if (phdr[i].p_type == PT_LOAD && phdr[i].p_flags == (PF_R | PF_X)) {
+
 
 			data->cave.offset = phdr[i].p_offset + phdr[i].p_filesz;
 			data->cave.addr = phdr[i].p_vaddr + phdr[i].p_filesz;
@@ -39,8 +39,13 @@ int	silvio(t_data *data, size_t payload_size) {
 			phdr[i].p_filesz += payload_size;
 			phdr[i].p_memsz += payload_size;
 
-			for (int j = i + 1; j < ehdr->e_phnum; j++) {
-				phdr[j].p_offset += PAGE_SIZE;
+			//for (int j = i + 1; j < ehdr->e_phnum; j++) {
+			//	phdr[j].p_offset += PAGE_SIZE;
+			//}
+			for (int j = ehdr->e_phnum - 1; j >= 0; j--) {
+				if (phdr[j].p_offset >= data->cave.offset) {
+					phdr[j].p_offset += PAGE_SIZE;
+				}
 			}
 
 			break;
@@ -48,8 +53,8 @@ int	silvio(t_data *data, size_t payload_size) {
 		}
 	}
 
-	for (int i = 0; i < ehdr->e_shnum; i++) {
-		if (shdr[i].sh_offset > data->cave.offset) {
+	for (int i = ehdr->e_shnum - 1; i >= 0; i--) {
+		if (shdr[i].sh_offset >= data->cave.offset) {
 			shdr[i].sh_offset += PAGE_SIZE;
 		}
 		else if (shdr[i].sh_addr + shdr[i].sh_size == data->cave.addr) {
@@ -57,7 +62,19 @@ int	silvio(t_data *data, size_t payload_size) {
 		}
 	}
 
-	ft_memmove(data->file + data->cave.offset + PAGE_SIZE, data->file + data->cave.offset, elf_size - data->cave.offset);
+	//for (int i = 0; i < ehdr->e_shnum; i++) {
+	//
+	//	if (shdr[i].sh_offset >= data->cave.offset) {
+	//		shdr[i].sh_offset += PAGE_SIZE;
+	//	}
+	//	else if (shdr[i].sh_addr + shdr[i].sh_size == data->cave.addr) {
+	//		shdr[i].sh_size += payload_size;
+	//	}
+	//}
+
+	ehdr->e_shoff += PAGE_SIZE;
+
+	ft_memmove(data->file + data->cave.offset + PAGE_SIZE, data->file + data->cave.offset, data->elf.size - data->cave.offset);
 	ft_memset(data->file + data->cave.offset, 0, PAGE_SIZE);
 
 	return 0;

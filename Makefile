@@ -3,20 +3,21 @@ NAME = famine
 src = src/famine.c \
       src/data.c \
       src/map.c \
-      src/silvio.c \
+      src/bss.c \
       src/utils.c 
 
 asm = src/syscall.s \
       src/end.s
 
-# Génération des fichiers objets correspondants
 obj = $(src:.c=.o) $(asm:.s=.o)
 
-cflags = -g -fno-stack-protector -fpic 
+cflags = -fpic -nostdlib -fno-builtin -I./inc -g
+#-fpic -fno-stack-protector -nodefaultlibs -fno-builtin -fno-omit-frame-pointer -pie -static
 
-sflags = -f elf64 -g
+sflags = -f elf64 -DPIC
 
-ldflags = -z noexecstack -nostdlib 
+ldflags = -nostdlib -fpic -z execstack
+#-pie -static
 
 .PHONY: all clean fclean re
 
@@ -26,7 +27,7 @@ $(NAME): $(obj)
 	gcc -o $(NAME) $(obj) $(ldflags)
 
 src/%.o: src/%.c
-	gcc $(cflags) -c -o $@ $< -I./inc
+	gcc $(cflags) -o $@ -c $< 
 
 src/%.o: src/%.s
 	nasm $(sflags) -o $@ $<

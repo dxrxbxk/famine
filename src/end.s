@@ -1,3 +1,4 @@
+default rel
 global end
 section .text
 end:

@@ -1,4 +1,4 @@
-BITS 64
+default rel
 global _syscall
 
 section .text
@@ -13,3 +13,15 @@ _syscall:
 	syscall
 
 	ret
+
+;	mov rdi, -4095
+;	cmp rdi, rax
+;
+;	jae end_syscall
+;
+;error:
+;	mov rax, -1
+;
+;end_syscall:
+;	ret
+;
