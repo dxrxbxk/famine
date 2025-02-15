@@ -11,7 +11,7 @@ asm = src/syscall.s \
 
 obj = $(src:.c=.o) $(asm:.s=.o)
 
-cflags = -fpic -nostdlib -I./inc -fno-stack-protector -fno-builtin 
+cflags = -fpic -nostdlib -I./inc -fno-stack-protector -fno-builtin -g
 #-fpic -fno-stack-protector -nodefaultlibs -fno-builtin -fno-omit-frame-pointer -pie -static
 
 sflags = -f elf64

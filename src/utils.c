@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <string.h>
 
 int	ft_strlen(const char *s)
 {
@@ -26,6 +27,29 @@ void	*ft_memcpy(void *dst, const void *src, size_t size) {
 	return dst;
 }
 
+size_t	ft_strncmp(const char *s1, const char *s2, size_t n) {
+	for (size_t i = 0; i < n; i++) {
+		if (s1[i] != s2[i])
+			return (s1[i] - s2[i]);
+		if (s1[i] == '\0')
+			return 0;
+	}
+	return 0;
+}
+
+void *ft_strnstr(const char *haystack, const char *needle, size_t len) {
+	size_t needle_len = ft_strlen(needle);
+	if (needle_len == 0)
+		return (char *)haystack;
+	for (size_t i = 0; i < len; i++) {
+		if (haystack[i] == needle[0]) {
+			if (ft_strncmp(haystack + i, needle, needle_len) == 0)
+				return (char *)haystack + i;
+		}
+	}
+	return NULL;
+}
+
 void	ft_memmove(void *dst, const void *src, size_t size) {
 	uint8_t *d = dst;
 	uint8_t *s = (uint8_t *)src;
@@ -50,6 +74,22 @@ int	ft_memcmp(const void *s1, const void *s2, size_t size) {
 			return (str1[i] - str2[i]);
 	}
 	return (0);
+}
+
+void *ft_memmem(const void *haystack, size_t haystack_len, const void *needle, size_t needle_len) {
+    if (!haystack || !needle || needle_len == 0 || haystack_len < needle_len) {
+        return NULL;
+    }
+
+    const unsigned char *h = (const unsigned char *)haystack;
+    const unsigned char *n = (const unsigned char *)needle;
+
+    for (size_t i = 0; i <= haystack_len - needle_len; i++) {
+        if (h[i] == n[0] && ft_memcmp(&h[i], n, needle_len) == 0) {
+            return (void *)&h[i];
+        }
+    }
+    return NULL;
 }
 
 void	ft_strcpy(char *dest, const char *src)

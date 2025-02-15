@@ -26,6 +26,7 @@ typedef struct s_data {
 	uint8_t *file;
 	size_t	size;
 	unsigned long	payload_size;
+	Elf64_Off	data_offset;
 
 	t_elf	elf;
 	t_cave	cave;

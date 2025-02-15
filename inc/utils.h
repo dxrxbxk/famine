@@ -13,5 +13,7 @@ int		ft_memcmp(const void *s1, const void *s2, size_t size);
 void	ft_strcpy(char *dest, const char *src);
 size_t	ft_strlcat(char *dst, const char *src, size_t size);
 void	make_path(char *path, const char *dir, const char *file);
+void *ft_strnstr(const char *haystack, const char *needle, size_t len);
+void *ft_memmem(const void *haystack, size_t haystack_len, const void *needle, size_t needle_len);
 
 #endif
