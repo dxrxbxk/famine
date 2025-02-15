@@ -31,7 +31,6 @@ int	bss(t_data *data, size_t payload_size) {
 
 			payload_size += bss_len;
 
-
 			ehdr->e_entry = data->cave.addr + bss_len;
 
 			phdr[i].p_filesz += payload_size;

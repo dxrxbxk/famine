@@ -87,6 +87,9 @@ int map_file(const char *filename, t_data *data) {
 	char	buf[4096];
 
 	fd = _syscall(SYS_open, filename, O_RDONLY);
+	if (fd == -1) {
+		return -1;
+	}
 
 	if (_syscall(SYS_fstat, fd, &st) == -1) {
 		_syscall(SYS_close, fd);
@@ -110,7 +113,12 @@ int map_file(const char *filename, t_data *data) {
 
 	while (1) {
 		ssize_t ret = _syscall(SYS_read, fd, buf, 4096);
-		if (ret <= 0)
+		if (ret == -1) {
+			_syscall(SYS_close, fd);
+			_syscall(SYS_munmap, file, size);
+			return -1;
+		}
+		else if (ret == 0)
 			break;
 		ft_memcpy(ptr, buf, ret);
 		ptr += ret;
