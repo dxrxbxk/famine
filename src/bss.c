@@ -55,7 +55,7 @@ int	bss(t_data *data, size_t payload_size) {
 			ehdr->e_entry = data->cave.addr + bss_len;
 
 			phdr[i].p_filesz += payload_size;
-			phdr[i].p_memsz += payload_size;
+			phdr[i].p_memsz += ALIGN(payload_size, 63);
 
 			phdr[i].p_flags |= PF_X;
 
@@ -70,7 +70,7 @@ int	bss(t_data *data, size_t payload_size) {
 	for (size_t i = ehdr->e_shnum; i--;) {
 		if (shdr[i].sh_addr >= data->cave.addr) {
 
-			shdr[i].sh_offset += payload_size;
+			shdr[i].sh_addr += payload_size;
 		}
 
 		if (shdr[i].sh_offset >= data->cave.offset) {
@@ -83,11 +83,14 @@ int	bss(t_data *data, size_t payload_size) {
 
 
 
-	data->cave.addr += bss_len;
 	ft_memmove(data->file + data->cave.offset + payload_size, 
 			data->file + data->cave.offset, elf_size - data->cave.offset);
 
 	ft_memset(data->file + data->cave.offset, 0, payload_size);
+
+
+	data->cave.addr += bss_len;
 	data->cave.offset += bss_len;
+
 	return 0;
 }

